@@ -1,10 +1,7 @@
 FROM eclipse/stack-base:ubuntu
-ENV RAILS_VERSION 5.0.1
-ENV RUBY_MAJOR 2.4
-ENV RUBY_VERSION 2.4.4
-ENV RUBY_DOWNLOAD_SHA256 1d0034071d675193ca769f64c91827e5f54cb3a7962316a41d5217c7bc6949f0
-ENV RUBYGEMS_VERSION 2.7.7
-ENV BUNDLER_VERSION 1.16.2
+ENV RAILS_VERSION 6.0
+ENV RUBY_MAJOR 2.7
+ENV RUBY_VERSION 2.7.0
 
 USER root
 # skip installing gem documentation
@@ -25,7 +22,6 @@ RUN set -ex \
     && sudo apt-get install -y --no-install-recommends make gcc zlib1g-dev autoconf build-essential libssl-dev libsqlite3-dev $buildDeps tzdata \
     && sudo rm -rf /var/lib/apt/lists/* \
     && sudo curl -fSL -o ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz" \
-    && echo "$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz" | sha256sum -c - \
     && sudo mkdir -p /usr/src/ruby \
     && sudo tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1 \
     && sudo rm ruby.tar.xz
@@ -47,7 +43,7 @@ RUN cd /usr/src/ruby \
 
 ENV BUNDLER_VERSION 1.11.2
 
-RUN sudo gem install bundler --version "$BUNDLER_VERSION" --force
+RUN sudo gem install bundler 
 
 # install things globally, for great justice
 # and don't create ".bundle" in all our apps
