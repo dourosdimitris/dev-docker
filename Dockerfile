@@ -1,5 +1,5 @@
 FROM eclipse/stack-base:ubuntu
-ENV RAILS_VERSION 6.0
+ENV RAILS_VERSION 6.2
 ENV RUBY_MAJOR 2.7
 ENV RUBY_VERSION 2.7.0
 
@@ -19,7 +19,7 @@ RUN set -ex \
 	ruby \
     ' \
     && sudo apt-get update \
-    && sudo apt-get install -y --no-install-recommends make gcc zlib1g-dev autoconf build-essential libssl-dev libsqlite3-dev $buildDeps tzdata \
+    && sudo apt-get install -y --no-install-recommends make gcc zlib1g-dev liblzma-dev autoconf build-essential libssl-dev libsqlite3-dev libpq-dev $buildDeps tzdata \
     && sudo rm -rf /var/lib/apt/lists/* \
     && sudo curl -fSL -o ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz" \
     && sudo mkdir -p /usr/src/ruby \
