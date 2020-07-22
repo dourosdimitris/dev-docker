@@ -1,66 +1,19 @@
-FROM eclipse/stack-base:ubuntu
-ENV RAILS_VERSION 6.0.2
-ENV RUBY_MAJOR 2.7
-ENV RUBY_VERSION 2.7.0
+FROM ruby:2.7.1
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+RUN apt-get update -qq && apt-get install -y yarn nodejs postgresql-client
+RUN mkdir /myapp
+WORKDIR /myapp
+COPY Gemfile /myapp/Gemfile
+COPY Gemfile.lock /myapp/Gemfile.lock
+RUN bundle install
+COPY . /myapp
 
-USER root
-# skip installing gem documentation
-RUN mkdir -p /usr/local/etc \
-    && echo 'install: --no-document' >> /usr/local/etc/gemrc \
-    && echo 'update: --no-document' >> /usr/local/etc/gemrc
-USER user
+# Add a script to be executed every time the container starts.
+COPY entrypoint.sh /usr/bin/
+RUN chmod +x /usr/bin/entrypoint.sh
+ENTRYPOINT ["entrypoint.sh"]
+EXPOSE 3000
 
-# some of ruby's build scripts are written in ruby
-# we purge this later to make sure our final image uses what we just built
-RUN set -ex \
-    && buildDeps=' \
-	bison \
-	libgdbm-dev \
-	ruby \
-    ' \
-    && sudo apt-get update \
-    && sudo apt-get install -y --no-install-recommends make gcc zlib1g-dev liblzma-dev autoconf build-essential libssl-dev libsqlite3-dev libpq-dev $buildDeps tzdata \
-    && sudo rm -rf /var/lib/apt/lists/* \
-    && sudo curl -fSL -o ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz" \
-    && sudo mkdir -p /usr/src/ruby \
-    && sudo tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1 \
-    && sudo rm ruby.tar.xz
-
-USER root
-RUN cd /usr/src/ruby \
-    && { sudo echo '#define ENABLE_PATH_CHECK 0'; echo; cat file.c; } > file.c.new && mv file.c.new file.c \
-    && autoconf \
-    && ./configure --disable-install-doc
-USER user
-
-RUN cd /usr/src/ruby \
-    && sudo make -j"$(nproc)" \
-    && sudo make install \
-    && sudo apt-get purge -y --auto-remove $buildDeps \
-    && sudo gem update --system $RUBYGEMS_VERSION \
-    && sudo rm -r /usr/src/ruby
-
-
-ENV BUNDLER_VERSION 1.11.2
-
-RUN sudo gem install bundler 
-
-# install things globally, for great justice
-# and don't create ".bundle" in all our apps
-ENV GEM_HOME /usr/local/bundle
-ENV BUNDLE_PATH="$GEM_HOME" \
-    BUNDLE_BIN="$GEM_HOME/bin" \
-    BUNDLE_SILENCE_ROOT_WARNING=1 \
-    BUNDLE_APP_CONFIG="$GEM_HOME"
-ENV PATH $BUNDLE_BIN:$PATH
-RUN sudo mkdir -p "$GEM_HOME" "$BUNDLE_BIN" \
-    && sudo chmod 777 "$GEM_HOME" "$BUNDLE_BIN"
-
-RUN sudo apt-get update && sudo apt-get install -y nodejs --no-install-recommends && sudo rm -rf /var/lib/apt/lists/*
-
-# see http://guides.rubyonrails.org/command_line.html#rails-dbconsole
-RUN sudo apt-get update && sudo apt-get install -y mysql-client postgresql-client sqlite3 --no-install-recommends && sudo rm -rf /var/lib/apt/lists/*
-
-RUN sudo gem install rails --version "$RAILS_VERSION"
-
-EXPOSE 3000 5000 8000 8080 9000
+# Start the main process.
+CMD ["rails", "server", "-b", "0.0.0.0"]
